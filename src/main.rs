@@ -3,7 +3,7 @@ use std::env;
 
 fn open() -> Result<Vec<u8>, Box<dyn Error>> {
     let args: Vec<String> = env::args().collect();
-    Ok(std::fs::read(args.get(1).expect("Can't open file"))?)
+    Ok(std::fs::read(args.get(1).expect("Usage : minipng [file.mp]"))?)
 }
 
 fn main() {
