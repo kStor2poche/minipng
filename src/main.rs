@@ -5,6 +5,4 @@ fn open() -> Result<Vec<u8>, Box<dyn Error>> {
     Ok(std::fs::read(args.get(1).expect("Usage : minipng [file.mp]"))?)
 }
 
-fn main() {
-    println!("Hello, world!");
-}
+fn main() {}
