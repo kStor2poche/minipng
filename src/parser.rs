@@ -8,6 +8,9 @@ impl Block {
     pub fn get_kind(&self) -> char {
         self.kind
     }
+    pub fn get_length(&self) -> u32 {
+        self.length
+    }
     pub fn get_content(&self) -> &Vec<u8> {
         &self.content
     }
