@@ -1,3 +1,6 @@
+mod parser;
+mod display;
+
 use std::error::Error;
 
 fn open() -> Result<Vec<u8>, Box<dyn Error>> {

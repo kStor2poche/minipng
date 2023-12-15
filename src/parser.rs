@@ -4,6 +4,15 @@ pub struct Block {
     content: Vec<u8>,
 }
 
+impl Block {
+    pub fn get_kind(&self) -> char {
+        self.kind
+    }
+    pub fn get_content(&self) -> &Vec<u8> {
+        &self.content
+    }
+}
+
 const MAGIC_BYTES: [u8; 8] = [0x4d, 0x69, 0x6e, 0x69, 0x2d, 0x50, 0x4e, 0x47];
 
 pub fn validate_magic_bytes(input: &Vec<u8>) -> bool {
