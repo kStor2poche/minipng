@@ -25,7 +25,7 @@ impl fmt::Display for Block {
                 write!(f, "Image info :\n{}x{}, {}", width, height, mode)
             },
             _ => {
-                write!(f, "todo")
+                Ok(())
             },
         }
     }
