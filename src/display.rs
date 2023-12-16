@@ -18,11 +18,11 @@ impl fmt::Display for Block {
                     2 => "palette",
                     3 => "24 bit color",
                     n => {
-                        tmp_err_format = format!("found invalid mode {}", n);
+                        tmp_err_format = format!("found invalid mode \"{}\"", n);
                         &tmp_err_format
                     },
                 };
-                write!(f, "Image info :\n{}x{}, {}", width, height, mode)
+                write!(f, "Image info :\n{}x{}, {}.", width, height, mode)
             },
             _ => {
                 Ok(())
