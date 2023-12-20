@@ -57,7 +57,36 @@ impl Block for Comment {
 
 impl Comment {
     fn from_raw_data<T>(data: &T, block_length: u32) -> Self where T: Iterator<Item = u8> {
-        let content = data.take(block_length as usize).map(|c| c.into(char)).collect::<String>();
+        let content = data.take(block_length as usize).map(|c| c as char).collect::<String>();
+        Self { content }
+    }
+}
+
+pub struct BwData {
+    content: Vec<bool>,
+}
+
+impl Block for BwData {
+    fn get_kind(&self) -> char {
+        'D'
+    }
+    fn get_length(&self) -> u32 {
+        self.content.len() as u32 / 8
+    }
+}
+
+impl BwData {
+    fn from_raw_data<T>(data: &T, block_length: u32) -> Self where T: Iterator<Item = u8> {
+        let content = data.take(block_length as usize)
+                          .map(|c| vec![ c & 0x10000000 == 0x10000000,
+                                         c & 0x01000000 == 0x01000000,
+                                         c & 0x00100000 == 0x00100000,
+                                         c & 0x00010000 == 0x00010000,
+                                         c & 0x00001000 == 0x00001000,
+                                         c & 0x00000100 == 0x00000100,
+                                         c & 0x00000010 == 0x00000010,
+                                         c & 0x00000001 == 0x00000001,])
+                          .flatten().collect::<Vec<bool>>();
         Self { content }
     }
 }
@@ -76,9 +105,14 @@ pub fn parse_blocks(input: &Vec<u8>) -> Result<Vec<Box<dyn Block>>, Box<dyn Erro
             b'H' => {
                 let block_length = read_u32(&input_iter);
                 assert!(block_length==9, "Malformed header");
-                res.push(Box::new(Header::from_raw_data(&input_iter)))
+                res.push(Box::new(Header::from_raw_data(&input_iter)));
             },
-            b'C' => {},
+            b'C' => {
+                let block_length = read_u32(&input_iter); // TODO: maybe check for block_length to
+                                                          // be within the file or is rust secure
+                                                          // enough for this not to be a problem ?
+                res.push(Box::new(Comment::from_raw_data(&input_iter, block_length)))
+            },
             b'D' => {},
             _ => (),
         }
