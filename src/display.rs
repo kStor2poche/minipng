@@ -1,7 +1,7 @@
 use crate::parser::Block;
 use std::fmt;
 
-impl fmt::Display for Block {
+impl fmt::Display for dyn Block {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.get_kind() {
             'C' => {
