@@ -1,9 +1,9 @@
 use std::error::Error;
 
-const MAGIC_BYTES: [u8; 8] = [0x4d, 0x69, 0x6e, 0x69, 0x2d, 0x50, 0x4e, 0x47]; //Mini-PNG as byte array
+const MAGIC_BYTES: [u8; 8] = [b'M', b'i', b'n', b'i', b'-', b'P', b'N', b'G']; //Mini-PNG as byte array
 
 // Helper function to read a u32 from an iterator of u8
-fn read_u32<T>(data: &T) -> u32
+fn read_u32<T>(data: &mut T) -> u32
 where T: Iterator<Item = u8>
 {
     data.next().unwrap() as u32 * 2_u32.pow(24)
@@ -15,7 +15,7 @@ where T: Iterator<Item = u8>
 pub trait Block {
     fn get_kind(&self) -> char;
     fn get_length(&self) -> u32;
-    fn from_raw_data<T>(data: &T, block_length: u32) -> Self where Self: Sized, T: Iterator<Item = u8>;
+    fn from_raw_data<T>(data: &mut T, block_length: u32) -> Self where Self: Sized, T: Iterator<Item = u8>;
 }
 
 pub struct Header {
@@ -31,7 +31,7 @@ impl Block for Header {
     fn get_length(&self) -> u32 {
         9
     }
-    fn from_raw_data<T>(data: &T, block_length: u32) -> Self where T: Iterator<Item = u8> {
+    fn from_raw_data<T>(data: &mut T, _block_length: u32) -> Self where T: Iterator<Item = u8> {
         let width = read_u32(data); 
 
         let height = read_u32(data); 
@@ -39,6 +39,12 @@ impl Block for Header {
         let pixel_type = data.next().unwrap();
 
         Self { width, height, pixel_type }
+    }
+}
+
+impl Header {
+    pub fn get_content(&self) -> (u32, u32, u8) {
+        (self.width, self.height, self.pixel_type)
     }
 }
 
@@ -53,7 +59,7 @@ impl Block for Comment {
     fn get_length(&self) -> u32 {
         self.content.len() as u32
     }
-    fn from_raw_data<T>(data: &T, block_length: u32) -> Self where T: Iterator<Item = u8> {
+    fn from_raw_data<T>(data: &mut T, block_length: u32) -> Self where T: Iterator<Item = u8> {
         let content = data.take(block_length as usize).map(|c| c as char).collect::<String>();
         Self { content }
     }
@@ -70,16 +76,16 @@ impl Block for BwData {
     fn get_length(&self) -> u32 {
         self.content.len() as u32 / 8
     }
-    fn from_raw_data<T>(data: &T, block_length: u32) -> Self where T: Iterator<Item = u8> {
+    fn from_raw_data<T>(data: &mut T, block_length: u32) -> Self where T: Iterator<Item = u8> {
         let content = data.take(block_length as usize)
-                          .map(|c| vec![ c & 0x10000000 == 0x10000000,
-                                         c & 0x01000000 == 0x01000000,
-                                         c & 0x00100000 == 0x00100000,
-                                         c & 0x00010000 == 0x00010000,
-                                         c & 0x00001000 == 0x00001000,
-                                         c & 0x00000100 == 0x00000100,
-                                         c & 0x00000010 == 0x00000010,
-                                         c & 0x00000001 == 0x00000001,])
+                          .map(|c| vec![ c & 0b10000000 == 0b10000000,
+                                         c & 0b01000000 == 0b01000000,
+                                         c & 0b00100000 == 0b00100000,
+                                         c & 0b00010000 == 0b00010000,
+                                         c & 0b00001000 == 0b00001000,
+                                         c & 0b00000100 == 0b00000100,
+                                         c & 0b00000010 == 0b00000010,
+                                         c & 0b00000001 == 0b00000001,])
                           .flatten().collect::<Vec<bool>>();
         Self { content }
     }
@@ -95,13 +101,13 @@ pub fn parse_blocks(input: &Vec<u8>) -> Result<Vec<Box<dyn Block>>, Box<dyn Erro
     while let Some(b) = input_iter.next() {
         match b {
             b'H' => {
-                let block_length = read_u32(&input_iter);
+                let block_length = read_u32(&mut input_iter);
                 assert!(block_length==9, "Malformed header");
-                res.push(Box::new(Header::from_raw_data(&input_iter, block_length)));
+                res.push(Box::new(Header::from_raw_data(&mut input_iter, block_length)));
             },
             b'C' => {
-                let block_length = read_u32(&input_iter);
-                res.push(Box::new(Comment::from_raw_data(&input_iter, block_length)))
+                let block_length = read_u32(&mut input_iter);
+                res.push(Box::new(Comment::from_raw_data(&mut input_iter, block_length)))
             },
             b'D' => {},
             _ => (),
