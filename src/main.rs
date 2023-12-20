@@ -1,5 +1,6 @@
 mod parser;
 mod display;
+mod show;
 
 use std::error::Error;
 

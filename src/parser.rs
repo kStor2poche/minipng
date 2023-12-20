@@ -1,5 +1,7 @@
 use std::error::Error;
 
+const MAGIC_BYTES: [u8; 8] = [0x4d, 0x69, 0x6e, 0x69, 0x2d, 0x50, 0x4e, 0x47]; //Mini-PNG as byte array
+
 // Helper function to read a u32 from an iterator of u8
 fn read_u32<T>(data: &T) -> u32
 where T: Iterator<Item = u8>
@@ -13,6 +15,7 @@ where T: Iterator<Item = u8>
 pub trait Block {
     fn get_kind(&self) -> char;
     fn get_length(&self) -> u32;
+    fn from_raw_data<T>(data: &T, block_length: u32) -> Self where Self: Sized, T: Iterator<Item = u8>;
 }
 
 pub struct Header {
@@ -28,10 +31,7 @@ impl Block for Header {
     fn get_length(&self) -> u32 {
         9
     }
-}
-
-impl Header {
-    fn from_raw_data<T>(data: &T) -> Self where T: Iterator<Item = u8> {
+    fn from_raw_data<T>(data: &T, block_length: u32) -> Self where T: Iterator<Item = u8> {
         let width = read_u32(data); 
 
         let height = read_u32(data); 
@@ -53,9 +53,6 @@ impl Block for Comment {
     fn get_length(&self) -> u32 {
         self.content.len() as u32
     }
-}
-
-impl Comment {
     fn from_raw_data<T>(data: &T, block_length: u32) -> Self where T: Iterator<Item = u8> {
         let content = data.take(block_length as usize).map(|c| c as char).collect::<String>();
         Self { content }
@@ -73,9 +70,6 @@ impl Block for BwData {
     fn get_length(&self) -> u32 {
         self.content.len() as u32 / 8
     }
-}
-
-impl BwData {
     fn from_raw_data<T>(data: &T, block_length: u32) -> Self where T: Iterator<Item = u8> {
         let content = data.take(block_length as usize)
                           .map(|c| vec![ c & 0x10000000 == 0x10000000,
@@ -91,8 +85,6 @@ impl BwData {
     }
 }
 
-const MAGIC_BYTES: [u8; 8] = [0x4d, 0x69, 0x6e, 0x69, 0x2d, 0x50, 0x4e, 0x47]; //Mini-PNG as byte array
-
 pub fn validate_magic_bytes(input: &Vec<u8>) -> bool {
     input.get(0..8).unwrap() == MAGIC_BYTES
 }
@@ -105,12 +97,10 @@ pub fn parse_blocks(input: &Vec<u8>) -> Result<Vec<Box<dyn Block>>, Box<dyn Erro
             b'H' => {
                 let block_length = read_u32(&input_iter);
                 assert!(block_length==9, "Malformed header");
-                res.push(Box::new(Header::from_raw_data(&input_iter)));
+                res.push(Box::new(Header::from_raw_data(&input_iter, block_length)));
             },
             b'C' => {
-                let block_length = read_u32(&input_iter); // TODO: maybe check for block_length to
-                                                          // be within the file or is rust secure
-                                                          // enough for this not to be a problem ?
+                let block_length = read_u32(&input_iter);
                 res.push(Box::new(Comment::from_raw_data(&input_iter, block_length)))
             },
             b'D' => {},
