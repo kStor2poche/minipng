@@ -1,6 +1,7 @@
 use std::error::Error;
 
 use crate::errors::*;
+use crate::display::Data;
 
 const MAGIC_BYTES: [u8; 8] = [b'M', b'i', b'n', b'i', b'-', b'P', b'N', b'G']; //Mini-PNG as byte array
 
@@ -20,7 +21,6 @@ pub trait Block {
     fn from_raw_data<T>(data: &mut T, block_length: u32) -> Self where Self: Sized, T: Iterator<Item = u8>;
 }
 
-pub trait Data {}
 
 pub struct Header {
     width: u32,
@@ -64,7 +64,7 @@ impl Block for Comment {
         self.content.len() as u32
     }
     fn from_raw_data<T>(data: &mut T, block_length: u32) -> Self where T: Iterator<Item = u8> {
-        let content = data.take(block_length as usize).map(|c| c as char).collect::<String>();
+        let content = data.take(block_length as usize).map(|c| c as char).collect();
         Self { content }
     }
 }
@@ -75,20 +75,31 @@ impl Comment {
     }
 }
 
-pub struct BwData {
-    content: Vec<bool>,
+pub struct DataBlock {
+    content: Vec<u8>,
 }
 
-impl Block for BwData {
+impl Block for DataBlock {
     fn get_kind(&self) -> char {
         'D'
     }
     fn get_length(&self) -> u32 {
-        self.content.len() as u32 / 8
+        self.content.len() as u32
     }
+    fn from_raw_data<T>(data: &mut T, block_length: u32) -> Self where Self: Sized, T: Iterator<Item = u8> {
+        let content = data.take(block_length as usize).collect();
+        Self { content }
+    }
+}
+
+
+pub struct BwData {
+    content: Vec<bool>,
+}
+
+/*
     fn from_raw_data<T>(data: &mut T, block_length: u32) -> Self where T: Iterator<Item = u8> {
-        let content = data.take(block_length as usize)
-                          .map(|c| vec![ c & 0b10000000 == 0b10000000,
+        let content = data.map(|c| vec![ c & 0b10000000 == 0b10000000,
                                          c & 0b01000000 == 0b01000000,
                                          c & 0b00100000 == 0b00100000,
                                          c & 0b00010000 == 0b00010000,
@@ -99,17 +110,19 @@ impl Block for BwData {
                           .flatten().collect::<Vec<bool>>();
         Self { content }
     }
+        */
+
+pub fn validate_magic_bytes(input: &Vec<u8>) -> Result<(), MalformedFileError> {
+    if input.get(0..8).unwrap() == MAGIC_BYTES {
+        Ok(())
+    } else {
+        Err(MalformedFileError::new("Invalid file format"))
+    }
 }
 
-impl Data for BwData {}
-
-pub fn validate_magic_bytes(input: &Vec<u8>) -> bool {
-    input.get(0..8).unwrap() == MAGIC_BYTES
-}
-
-pub fn parse_blocks(input: &Vec<u8>) -> Result<(Option<Header>, Vec<Comment>, Vec<Box<dyn Data>>), Box<dyn Error>> {
+pub fn parse_blocks(input: &Vec<u8>) -> Result<(Option<Header>, Vec<Comment>, Vec<DataBlock>), Box<dyn Error>> {
     let mut input_iter = input.iter().map(|e| *e);
-    let mut blocks: (Option<Header>, Vec<Comment>, Vec<Box<dyn Data>>) = (None, Vec::new(), Vec::new());
+    let mut blocks: (Option<Header>, Vec<Comment>, Vec<DataBlock>) = (None, Vec::new(), Vec::new());
     let mut data_type: Option<u8> = None; // Used to know data type from previously read header
 
     while let Some(b) = input_iter.next() {
@@ -130,15 +143,8 @@ pub fn parse_blocks(input: &Vec<u8>) -> Result<(Option<Header>, Vec<Comment>, Ve
                 blocks.1.push(Comment::from_raw_data(&mut input_iter, block_length))
             },
             b'D' => {
-                if let Some(t) = data_type {
-                    let block_length = read_u32(&mut input_iter);
-                    if t == 0 {
-                        blocks.2.push(Box::new(BwData::from_raw_data(&mut input_iter, block_length)))
-                    }
-                } else {
-                    return Err(Box::new(MalformedFileError::new("Missing header before data block")))
-
-                }
+                let block_length = read_u32(&mut input_iter);
+                blocks.2.push(DataBlock::from_raw_data(&mut input_iter, block_length))
             },
             _ => (),
         }

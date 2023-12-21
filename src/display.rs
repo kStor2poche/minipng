@@ -1,4 +1,4 @@
-use crate::parser::{Header, Comment};
+use crate::parser::{Header, Comment, BwData, DataBlock};
 use std::fmt;
 
 /* 
@@ -11,6 +11,7 @@ impl fmt::Display for Comment {
         write!(f, "Comment : {}", self.get_content())
     }
 }
+
 impl fmt::Display for Header {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
                 let content = self.get_content();
@@ -18,7 +19,7 @@ impl fmt::Display for Header {
                 let mode = match content.2 {
                     0 => "black and white",
                     1 => "grey level",
-                    2 => "palette",
+    2 => "palette",
                     3 => "24 bit color",
                     n => {
                         tmp_err_format = format!("found invalid mode \"{}\"", n);
@@ -30,3 +31,11 @@ impl fmt::Display for Header {
 }
 
 
+pub trait Data {
+    fn from_blocks(blocks: Vec<DataBlock>) -> Self where Self: Sized;
+}
+impl Data for BwData {
+    fn from_blocks(blocks: Vec<DataBlock>) -> Self {
+        todo!()
+    }
+}
