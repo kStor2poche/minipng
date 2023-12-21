@@ -1,5 +1,7 @@
 use std::error::Error;
 
+use crate::errors::*;
+
 const MAGIC_BYTES: [u8; 8] = [b'M', b'i', b'n', b'i', b'-', b'P', b'N', b'G']; //Mini-PNG as byte array
 
 // Helper function to read a u32 from an iterator of u8
@@ -17,6 +19,8 @@ pub trait Block {
     fn get_length(&self) -> u32;
     fn from_raw_data<T>(data: &mut T, block_length: u32) -> Self where Self: Sized, T: Iterator<Item = u8>;
 }
+
+pub trait Data {}
 
 pub struct Header {
     width: u32,
@@ -65,6 +69,12 @@ impl Block for Comment {
     }
 }
 
+impl Comment {
+    pub fn get_content(&self) -> &String {
+        &self.content
+    }
+}
+
 pub struct BwData {
     content: Vec<bool>,
 }
@@ -91,34 +101,56 @@ impl Block for BwData {
     }
 }
 
+impl Data for BwData {}
+
 pub fn validate_magic_bytes(input: &Vec<u8>) -> bool {
     input.get(0..8).unwrap() == MAGIC_BYTES
 }
 
-pub fn parse_blocks(input: &Vec<u8>) -> Result<Vec<Box<dyn Block>>, Box<dyn Error>> {
+pub fn parse_blocks(input: &Vec<u8>) -> Result<(Option<Header>, Vec<Comment>, Vec<Box<dyn Data>>), Box<dyn Error>> {
     let mut input_iter = input.iter().map(|e| *e);
-    let mut res: Vec<Box<dyn Block>> = Vec::new();
+    let mut blocks: (Option<Header>, Vec<Comment>, Vec<Box<dyn Data>>) = (None, Vec::new(), Vec::new());
+    let mut data_type: Option<u8> = None; // Used to know data type from previously read header
+
     while let Some(b) = input_iter.next() {
         match b {
             b'H' => {
                 let block_length = read_u32(&mut input_iter);
-                assert!(block_length==9, "Malformed header");
-                res.push(Box::new(Header::from_raw_data(&mut input_iter, block_length)));
+                if block_length != 9 {
+                    return Err(Box::new(MalformedFileError::new("Wrong header length")))
+                }
+                if blocks.0.is_some() {
+                    return Err(Box::new(MalformedFileError::new("Multiple headers")))
+                }
+                blocks.0 = Some(Header::from_raw_data(&mut input_iter, block_length));
+                data_type = Some(blocks.0.as_ref().unwrap().pixel_type)
             },
             b'C' => {
                 let block_length = read_u32(&mut input_iter);
-                res.push(Box::new(Comment::from_raw_data(&mut input_iter, block_length)))
+                blocks.1.push(Comment::from_raw_data(&mut input_iter, block_length))
             },
-            b'D' => {},
+            b'D' => {
+                if let Some(t) = data_type {
+                    let block_length = read_u32(&mut input_iter);
+                    if t == 0 {
+                        blocks.2.push(Box::new(BwData::from_raw_data(&mut input_iter, block_length)))
+                    }
+                } else {
+                    return Err(Box::new(MalformedFileError::new("Missing header before data block")))
+
+                }
+            },
             _ => (),
         }
     };
-    Ok(res)
+    Ok(blocks)
 }
 
 #[cfg(test)]
 mod tests {
     use crate::parser::{validate_magic_bytes, MAGIC_BYTES};
+
+    use super::parse_blocks;
 
     #[test]
     fn test_magic_bytes() {
@@ -145,5 +177,22 @@ mod tests {
     }
 
     #[test]
-    fn test() {}
+    fn test_blocks_parsing() {
+        let h_block = vec![b'H',0, 0, 0, 9, 0, 0, 0, 42, 0, 0, 0, 42, 0];
+
+        let com = "Ceci est un commentaire";
+        let mut c_block = vec![b'C'];
+        c_block.extend((com.len() as u32).to_be_bytes());
+        c_block.extend(Vec::from(String::from(com).as_bytes()));
+
+        let mut d_block = vec![b'D', 0, 0, 0, 2];
+        d_block.extend([0; 42*42]);
+
+        let mut data = h_block;
+        data.extend(c_block);
+        data.extend(d_block);
+        let blocks = parse_blocks(&data).unwrap();
+        assert_eq!(blocks.0.unwrap().get_content(), (42, 42, 0));
+        assert_eq!((blocks.1)[0].get_content(), &com.to_string());
+    }
 }
