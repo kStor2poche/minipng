@@ -22,11 +22,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Parse and validate file data
     validate_magic_bytes(&data)?;
 
-    let (header, comments, data_blocks) = parse_blocks(&data)?;
+    let (header, comments, data_blocks, palette) = parse_blocks(&data)?;
 
     validate_file_integrity(&header, &data_blocks)?;
 
-    let img = display::get_image(&header.as_ref().unwrap(), &data_blocks)?;
+    let img = display::get_image(&header.as_ref().unwrap(), &data_blocks, palette)?;
 
     // Display everything
     println!("{}", header.unwrap());

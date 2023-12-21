@@ -1,4 +1,4 @@
-use crate::{parser::{Header, Comment, DataBlock}, errors::MalformedFileError};
+use crate::{parser::{Header, Comment, DataBlock, Palette}, errors::MalformedFileError};
 use std::fmt;
 
 /* 
@@ -36,13 +36,13 @@ impl fmt::Display for Header {
 }
 
 
-pub fn get_image(header: &Header, data: &Vec<DataBlock>) -> Result<Box<dyn Image>, MalformedFileError> {
+pub fn get_image(header: &Header, data: &Vec<DataBlock>, palette: Option<Palette>) -> Result<Box<dyn Image>, MalformedFileError> {
     let (width, height, pixel_type) = header.get_content();
     match pixel_type {
-        0 => Ok(Box::new(BwImage::from_blocks(data, width, height))),
-        1 => Ok(Box::new(GsImage::from_blocks(data, width, height))),
-        2 => todo!(),
-        3 => Ok(Box::new(RgbImage::from_blocks(data, width, height))),
+        0 => Ok(Box::new(BwImage::from_blocks(data, width, height, None))),
+        1 => Ok(Box::new(GsImage::from_blocks(data, width, height, None))),
+        2 => Ok(Box::new(PalImage::from_blocks(data, width, height, palette))),
+        3 => Ok(Box::new(RgbImage::from_blocks(data, width, height, None))),
         _ => Err(MalformedFileError::new("Invalid pixel type"))
     }
 }
@@ -60,6 +60,7 @@ pub struct GsImage {
 }
 pub struct PalImage {
     data: Vec<u8>,
+    palette: Palette,
     width: u32,
     height: u32,
 }
@@ -70,11 +71,11 @@ pub struct RgbImage {
 }
 
 pub trait Image {
-    fn from_blocks(blocks: &Vec<DataBlock>, width: u32, height: u32) -> Self where Self: Sized;
+    fn from_blocks(blocks: &Vec<DataBlock>, width: u32, height: u32, palette: Option<Palette>) -> Self where Self: Sized;
     fn display(&self);
 }
 impl Image for BwImage {
-    fn from_blocks(blocks: &Vec<DataBlock>, width: u32, height: u32) -> Self {
+    fn from_blocks(blocks: &Vec<DataBlock>, width: u32, height: u32, _: Option<Palette>) -> Self {
         let data = blocks.iter()
                          .map(|data_block| data_block.get_content())
                          .flatten()
@@ -101,7 +102,7 @@ impl Image for BwImage {
     }
 }
 impl Image for GsImage {
-    fn from_blocks(blocks: &Vec<DataBlock>, width: u32, height: u32) -> Self where Self: Sized {
+    fn from_blocks(blocks: &Vec<DataBlock>, width: u32, height: u32, _: Option<Palette>) -> Self where Self: Sized {
         let data = blocks.iter()
                          .map(|data_block| data_block.get_content())
                          .flatten()
@@ -122,15 +123,35 @@ impl Image for GsImage {
     }
 }
 impl Image for PalImage {
-    fn from_blocks(blocks: &Vec<DataBlock>, width: u32, height: u32) -> Self where Self: Sized {
-        todo!()
+    fn from_blocks(blocks: &Vec<DataBlock>, width: u32, height: u32, palette: Option<Palette>) -> Self where Self: Sized {
+        let data = blocks.iter()
+                         .map(|data_block| data_block.get_content())
+                         .flatten()
+                         .map(|uchar| *uchar)
+                         .collect::<Vec<u8>>();
+        if !palette.is_some() {
+            panic!("no palette given") // surely overkill but didn't want to change all the
+                                       // from_blocks return values to a Result<>
+        }
+        Self { data, width, height, palette: palette.unwrap() }
     }
     fn display(&self) {
-        todo!()
+        self.data.chunks_exact(self.width as usize)
+                 .take(self.height as usize)
+                 .for_each(
+                     |r| println!("{}", 
+                                  r.iter()
+                                   .map(|i| rgb_pixel(self.palette.get_index(*i).0,
+                                                      self.palette.get_index(*i).1,
+                                                      self.palette.get_index(*i).2)
+                                    )
+                                   .collect::<String>())
+                  );
+        print!("\x1b[0m")
     }
 }
 impl Image for RgbImage {
-    fn from_blocks(blocks: &Vec<DataBlock>, width: u32, height: u32) -> Self where Self: Sized {
+    fn from_blocks(blocks: &Vec<DataBlock>, width: u32, height: u32, _: Option<Palette>) -> Self where Self: Sized {
         let data = blocks.iter()
                          .map(|data_block| data_block.get_content().to_owned())
                          .flatten()

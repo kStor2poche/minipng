@@ -97,6 +97,33 @@ impl DataBlock {
     }
 }
 
+pub struct Palette {
+    palettes: Vec<(u8, u8, u8)>,
+}
+
+impl Block for Palette {
+fn get_kind(&self) -> char {
+        'P'
+    }
+    fn get_length(&self) -> u32 {
+        self.palettes.len() as u32
+    }
+    fn from_raw_data<T>(data: &mut T, block_length: u32) -> Self where Self: Sized, T: Iterator<Item = u8> {
+        let palettes = data.take(block_length as usize)
+                           .collect::<Vec<u8>>()
+                           .chunks_exact(3)
+                           .map(|colors| (colors[0], colors[1], colors[2]))
+                           .collect();
+        Self { palettes }
+    }
+}
+
+impl Palette {
+    pub fn get_index(&self, i: u8) -> (u8, u8, u8) {
+        self.palettes[i as usize]
+    }
+}
+
 
 pub fn validate_magic_bytes(input: &Vec<u8>) -> Result<(), MalformedFileError> {
     if input.get(0..8).unwrap() == MAGIC_BYTES {
@@ -106,10 +133,9 @@ pub fn validate_magic_bytes(input: &Vec<u8>) -> Result<(), MalformedFileError> {
     }
 }
 
-pub fn parse_blocks(input: &Vec<u8>) -> Result<(Option<Header>, Vec<Comment>, Vec<DataBlock>), Box<dyn Error>> {
-    let mut input_iter = input.iter().map(|e| *e);
-    let mut blocks: (Option<Header>, Vec<Comment>, Vec<DataBlock>) = (None, Vec::new(), Vec::new());
-
+pub fn parse_blocks(input: &Vec<u8>) -> Result<(Option<Header>, Vec<Comment>, Vec<DataBlock>, Option<Palette>), Box<dyn Error>> {
+    let mut input_iter = input.iter().map(|e| *e).skip(8); // skip the magic bytes
+    let mut blocks: (Option<Header>, Vec<Comment>, Vec<DataBlock>, Option<Palette>) = (None, Vec::new(), Vec::new(), None);
     while let Some(b) = input_iter.next() {
         match b {
             b'H' => {
@@ -129,6 +155,13 @@ pub fn parse_blocks(input: &Vec<u8>) -> Result<(Option<Header>, Vec<Comment>, Ve
             b'D' => {
                 let block_length = read_u32(&mut input_iter);
                 blocks.2.push(DataBlock::from_raw_data(&mut input_iter, block_length))
+            },
+            b'P' => {
+                let block_length = read_u32(&mut input_iter);
+                if block_length > 3*256 {
+                    return Err(Box::new(MalformedFileError::new("Palette too big")))
+                }
+                blocks.3 = Some(Palette::from_raw_data(&mut input_iter, block_length))
             },
             _ => (),
         }
