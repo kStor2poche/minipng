@@ -6,6 +6,11 @@ use std::fmt;
 * Implementing fmt::Display for some blocks to print them in a nice way with the `print!` and `println!` macros
 * */
 
+// helper function
+fn rgb_pixel(r: u8, g: u8, b: u8) -> String{
+    format!("\x1b[38;2;{};{};{}m██", r, g, b)
+}
+
 impl fmt::Display for Comment {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Comment : {}", self.get_content())
@@ -45,6 +50,11 @@ pub struct BwImage {
     width: u32,
     height: u32,
 }
+pub struct GsImage {
+    data: Vec<u8>,
+    width: u32,
+    height: u32,
+}
 
 pub trait Image {
     fn from_blocks(blocks: &Vec<DataBlock>, width: u32, height: u32) -> Self where Self: Sized;
@@ -63,16 +73,38 @@ impl Image for BwImage {
                                         c & 0b00000100 == 0b00000100,
                                         c & 0b00000010 == 0b00000010,
                                         c & 0b00000001 == 0b00000001,])
-                          .flatten().collect::<Vec<bool>>();
+                         .flatten().collect::<Vec<bool>>();
         Self { data, width, height }
     }
     fn display(&self) {
         self.data.chunks_exact(self.width as usize)
+                 .take(self.height as usize)
                  .for_each(
                      |r| println!("{}", 
                                   r.iter()
                                    .map(|b| if *b {' '} else {'X'})
                                    .collect::<String>())
                   );
+    }
+}
+impl Image for GsImage {
+    fn from_blocks(blocks: Vec<DataBlock>, width: u32, height: u32) -> Self where Self: Sized {
+        let data = blocks.iter()
+                         .map(|data_block| data_block.get_content())
+                         .flatten()
+                         .map(|uchar| *uchar)
+                         .collect::<Vec<u8>>();
+        Self { data, width, height }
+    }
+    fn display(&self) {
+        self.data.chunks_exact(self.width as usize)
+                 .take(self.height as usize)
+                 .for_each(
+                     |r| println!("{}", 
+                                  r.iter()
+                                   .map(|gs| rgb_pixel(*gs, *gs, *gs))
+                                   .collect::<String>())
+                  );
+        print!("\x1b[0m")
     }
 }
