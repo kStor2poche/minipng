@@ -31,7 +31,7 @@ impl fmt::Display for Header {
 }
 
 
-pub fn get_image(header: Header, data: Vec<DataBlock>) -> Result<Box<dyn Image>, MalformedFileError> {
+pub fn get_image(header: &Header, data: &Vec<DataBlock>) -> Result<Box<dyn Image>, MalformedFileError> {
     let (width, height, pixel_type) = header.get_content();
     match pixel_type {
         0 => Ok(Box::new(BwImage::from_blocks(data, width, height))),
@@ -47,11 +47,11 @@ pub struct BwImage {
 }
 
 pub trait Image {
-    fn from_blocks(blocks: Vec<DataBlock>, width: u32, height: u32) -> Self where Self: Sized;
+    fn from_blocks(blocks: &Vec<DataBlock>, width: u32, height: u32) -> Self where Self: Sized;
     fn display(&self);
 }
 impl Image for BwImage {
-    fn from_blocks(blocks: Vec<DataBlock>, width: u32, height: u32) -> Self {
+    fn from_blocks(blocks: &Vec<DataBlock>, width: u32, height: u32) -> Self {
         let data = blocks.iter()
                          .map(|data_block| data_block.get_content())
                          .flatten()
@@ -71,7 +71,7 @@ impl Image for BwImage {
                  .for_each(
                      |r| println!("{}", 
                                   r.iter()
-                                   .map(|b| if *b {'X'} else {' '})
+                                   .map(|b| if *b {' '} else {'X'})
                                    .collect::<String>())
                   );
     }

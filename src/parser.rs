@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use crate::errors::*;
+use crate::errors::{*, self};
 
 const MAGIC_BYTES: [u8; 8] = [b'M', b'i', b'n', b'i', b'-', b'P', b'N', b'G']; //Mini-PNG as byte array
 
@@ -134,6 +134,29 @@ pub fn parse_blocks(input: &Vec<u8>) -> Result<(Option<Header>, Vec<Comment>, Ve
         }
     };
     Ok(blocks)
+}
+
+pub fn validate_file_integrity(header: &Option<Header>, data_blocks: &Vec<DataBlock>) -> Result<(), MalformedFileError> {
+    if header.is_none() {
+        return Err(errors::MalformedFileError::new("Missing header block"));
+    }
+
+    let (width, height, pixel_type) = header.as_ref().unwrap().get_content();
+    let data_size = data_blocks.iter()
+        .map(|block| {
+            block.get_length()
+        })
+        .sum::<u32>();
+    let pixel_size = match pixel_type {
+        0 => 1,
+        _ => return Err(errors::MalformedFileError::new("Invalid pixel type")),
+    };
+
+    if data_size < width * height * pixel_size {
+        return Err(errors::MalformedFileError::new("Missing data"));
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]
