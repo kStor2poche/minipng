@@ -91,21 +91,12 @@ impl Block for DataBlock {
     }
 }
 
-
-/*
-    fn from_raw_data<T>(data: &mut T, block_length: u32) -> Self where T: Iterator<Item = u8> {
-        let content = data.map(|c| vec![ c & 0b10000000 == 0b10000000,
-                                         c & 0b01000000 == 0b01000000,
-                                         c & 0b00100000 == 0b00100000,
-                                         c & 0b00010000 == 0b00010000,
-                                         c & 0b00001000 == 0b00001000,
-                                         c & 0b00000100 == 0b00000100,
-                                         c & 0b00000010 == 0b00000010,
-                                         c & 0b00000001 == 0b00000001,])
-                          .flatten().collect::<Vec<bool>>();
-        Self { content }
+impl DataBlock {
+    pub fn get_content(&self) -> &Vec<u8> {
+        &self.content
     }
-        */
+}
+
 
 pub fn validate_magic_bytes(input: &Vec<u8>) -> Result<(), MalformedFileError> {
     if input.get(0..8).unwrap() == MAGIC_BYTES {
