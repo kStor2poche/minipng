@@ -31,11 +31,21 @@ impl fmt::Display for Header {
 }
 
 
-pub trait Data {
-    fn from_blocks(blocks: Vec<DataBlock>) -> Self where Self: Sized;
+pub struct BwImage {
+    data: Vec<bool>,
+    width: u32,
+    height: u32,
 }
-impl Data for BwData {
+
+pub trait Image {
+    fn from_blocks(blocks: Vec<DataBlock>) -> Self where Self: Sized;
+    fn display(&self);
+}
+impl Image for BwImage {
     fn from_blocks(blocks: Vec<DataBlock>) -> Self {
+        todo!()
+    }
+    fn display(&self) {
         todo!()
     }
 }

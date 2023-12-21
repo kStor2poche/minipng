@@ -93,10 +93,6 @@ impl Block for DataBlock {
 }
 
 
-pub struct BwData {
-    content: Vec<bool>,
-}
-
 /*
     fn from_raw_data<T>(data: &mut T, block_length: u32) -> Self where T: Iterator<Item = u8> {
         let content = data.map(|c| vec![ c & 0b10000000 == 0b10000000,
@@ -123,7 +119,6 @@ pub fn validate_magic_bytes(input: &Vec<u8>) -> Result<(), MalformedFileError> {
 pub fn parse_blocks(input: &Vec<u8>) -> Result<(Option<Header>, Vec<Comment>, Vec<DataBlock>), Box<dyn Error>> {
     let mut input_iter = input.iter().map(|e| *e);
     let mut blocks: (Option<Header>, Vec<Comment>, Vec<DataBlock>) = (None, Vec::new(), Vec::new());
-    let mut data_type: Option<u8> = None; // Used to know data type from previously read header
 
     while let Some(b) = input_iter.next() {
         match b {
@@ -136,7 +131,6 @@ pub fn parse_blocks(input: &Vec<u8>) -> Result<(Option<Header>, Vec<Comment>, Ve
                     return Err(Box::new(MalformedFileError::new("Multiple headers")))
                 }
                 blocks.0 = Some(Header::from_raw_data(&mut input_iter, block_length));
-                data_type = Some(blocks.0.as_ref().unwrap().pixel_type)
             },
             b'C' => {
                 let block_length = read_u32(&mut input_iter);
