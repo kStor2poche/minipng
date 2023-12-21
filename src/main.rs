@@ -24,6 +24,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let (header, comments, data_blocks, palette) = parse_blocks(&data)?;
 
+    if palette.is_some() {
+        println!("{}", palette.as_ref().unwrap())
+    }
+
     validate_file_integrity(&header, &data_blocks)?;
 
     let img = display::get_image(&header.as_ref().unwrap(), &data_blocks, palette)?;

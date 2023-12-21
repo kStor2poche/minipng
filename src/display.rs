@@ -35,6 +35,18 @@ impl fmt::Display for Header {
     }
 }
 
+impl fmt::Display for Palette {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Palette entries :\n")?;
+        for i in 0..self.get_palette_len() {
+            write!(f, "{:<3} : {}\x1b[0m\n", i, rgb_pixel(self.get_index(i as u8).0,
+                                                self.get_index(i as u8).1,
+                                                self.get_index(i as u8).2))?;
+       }
+       Ok(())
+   }
+}
+
 
 pub fn get_image(header: &Header, data: &Vec<DataBlock>, palette: Option<Palette>) -> Result<Box<dyn Image>, MalformedFileError> {
     let (width, height, pixel_type) = header.get_content();
@@ -129,7 +141,7 @@ impl Image for PalImage {
                          .flatten()
                          .map(|uchar| *uchar)
                          .collect::<Vec<u8>>();
-        if !palette.is_some() {
+        if palette.is_none() {
             panic!("no palette given") // surely overkill but didn't want to change all the
                                        // from_blocks return values to a Result<>
         }

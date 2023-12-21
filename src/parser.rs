@@ -98,7 +98,7 @@ impl DataBlock {
 }
 
 pub struct Palette {
-    palettes: Vec<(u8, u8, u8)>,
+    palette: Vec<(u8, u8, u8)>,
 }
 
 impl Block for Palette {
@@ -106,7 +106,7 @@ fn get_kind(&self) -> char {
         'P'
     }
     fn get_length(&self) -> u32 {
-        self.palettes.len() as u32
+        self.palette.len() as u32
     }
     fn from_raw_data<T>(data: &mut T, block_length: u32) -> Self where Self: Sized, T: Iterator<Item = u8> {
         let palettes = data.take(block_length as usize)
@@ -114,18 +114,22 @@ fn get_kind(&self) -> char {
                            .chunks_exact(3)
                            .map(|colors| (colors[0], colors[1], colors[2]))
                            .collect();
-        Self { palettes }
+        Self { palette: palettes }
     }
 }
 
 impl Palette {
     pub fn get_index(&self, i: u8) -> (u8, u8, u8) {
-        if i as usize >= self.palettes.len() {
+        if i as usize >= self.palette.len() {
+            print!("\x1b[0m"); // because we likely are in the middle of printing something colored
             panic!("Trying to access out-of-bounds palette index"); // same as display.rs line 33,
                                                                     // but maybe a bit more
                                                                     // appropriate here ?
         }
-        self.palettes[i as usize]
+        self.palette[i as usize]
+    }
+    pub fn get_palette_len(&self) -> usize {
+        self.palette.len()
     }
 }
 
