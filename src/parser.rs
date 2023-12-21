@@ -40,9 +40,6 @@ impl Block for Header {
 
         Self { width, height, pixel_type }
     }
-    pub fn get_content(&self) -> (u32, u32, u8) {
-        (self.width, self.height, self.pixel_type)
-    }
 }
 
 impl Header {
@@ -65,9 +62,6 @@ impl Block for Comment {
     fn from_raw_data<T>(data: &mut T, block_length: u32) -> Self where T: Iterator<Item = u8> {
         let content = data.take(block_length as usize).map(|c| c as char).collect::<String>();
         Self { content }
-    }
-    pub fn get_content(&self) -> &String {
-        &self.content
     }
 }
 
