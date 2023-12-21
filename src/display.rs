@@ -1,5 +1,5 @@
 use crate::{parser::{Header, Comment, DataBlock}, errors::MalformedFileError};
-use std::{fmt, iter::Empty};
+use std::fmt;
 
 /* 
 * Part 2 :
