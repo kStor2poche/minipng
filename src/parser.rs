@@ -120,6 +120,11 @@ fn get_kind(&self) -> char {
 
 impl Palette {
     pub fn get_index(&self, i: u8) -> (u8, u8, u8) {
+        if i as usize >= self.palettes.len() {
+            panic!("Trying to access out-of-bounds palette index"); // same as display.rs line 33,
+                                                                    // but maybe a bit more
+                                                                    // appropriate here ?
+        }
         self.palettes[i as usize]
     }
 }
