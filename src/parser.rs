@@ -102,7 +102,7 @@ pub struct Palette {
 }
 
 impl Block for Palette {
-fn get_kind(&self) -> char {
+    fn get_kind(&self) -> char {
         'P'
     }
     fn get_length(&self) -> u32 {
@@ -178,12 +178,17 @@ pub fn parse_blocks(input: &Vec<u8>) -> Result<(Option<Header>, Vec<Comment>, Ve
     Ok(blocks)
 }
 
-pub fn validate_file_integrity(header: &Option<Header>, data_blocks: &Vec<DataBlock>) -> Result<(), MalformedFileError> {
+pub fn validate_file_integrity(header: &Option<Header>, data_blocks: &Vec<DataBlock>, palette: &Option<Palette>) -> Result<(), MalformedFileError> {
     if header.is_none() {
         return Err(errors::MalformedFileError::new("Missing header block"));
     }
 
     let (width, height, pixel_type) = header.as_ref().unwrap().get_content();
+
+    if pixel_type == 2 && palette.is_none() {
+        return Err(errors::MalformedFileError::new("Missing palette"));
+    }
+
     let data_size = data_blocks.iter()
         .map(|block| {
             block.get_length()

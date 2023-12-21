@@ -24,19 +24,20 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let (header, comments, data_blocks, palette) = parse_blocks(&data)?;
 
-    if palette.is_some() {
-        println!("{}", palette.as_ref().unwrap())
-    }
 
-    validate_file_integrity(&header, &data_blocks)?;
+    validate_file_integrity(&header, &data_blocks, &palette)?;
 
-    let img = display::get_image(&header.as_ref().unwrap(), &data_blocks, palette)?;
+    let img = display::get_image(&header.as_ref().unwrap(), &data_blocks, &palette)?;
 
     // Display everything
     println!("{}", header.unwrap());
     
     for com in comments {
         println!("{}", com);
+    }
+
+    if palette.is_some() {
+        println!("{}", palette.as_ref().unwrap())
     }
 
     img.display();

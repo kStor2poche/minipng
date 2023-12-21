@@ -48,12 +48,12 @@ impl fmt::Display for Palette {
 }
 
 
-pub fn get_image(header: &Header, data: &Vec<DataBlock>, palette: Option<Palette>) -> Result<Box<dyn Image>, MalformedFileError> {
+pub fn get_image(header: &Header, data: &Vec<DataBlock>, palette: &Option<Palette>) -> Result<Box<dyn Image>, MalformedFileError> {
     let (width, height, pixel_type) = header.get_content();
     match pixel_type {
         0 => Ok(Box::new(BwImage::from_blocks(data, width, height, None))),
         1 => Ok(Box::new(GsImage::from_blocks(data, width, height, None))),
-        2 => Ok(Box::new(PalImage::from_blocks(data, width, height, palette))),
+        2 => Ok(Box::new(PalImage::from_blocks(data, width, height, *palette))),
         3 => Ok(Box::new(RgbImage::from_blocks(data, width, height, None))),
         _ => Err(MalformedFileError::new("Invalid pixel type"))
     }
@@ -141,10 +141,7 @@ impl Image for PalImage {
                          .flatten()
                          .map(|uchar| *uchar)
                          .collect::<Vec<u8>>();
-        if palette.is_none() {
-            panic!("no palette given") // surely overkill but didn't want to change all the
-                                       // from_blocks return values to a Result<>
-        }
+
         Self { data, width, height, palette: palette.unwrap() }
     }
     fn display(&self) {
