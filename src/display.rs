@@ -40,6 +40,7 @@ pub fn get_image(header: &Header, data: &Vec<DataBlock>) -> Result<Box<dyn Image
     let (width, height, pixel_type) = header.get_content();
     match pixel_type {
         0 => Ok(Box::new(BwImage::from_blocks(data, width, height))),
+        1 => Ok(Box::new(GsImage::from_blocks(data, width, height))),
         _ => Err(MalformedFileError::new("Invalid pixel type"))
     }
 }

@@ -158,6 +158,9 @@ pub fn validate_file_integrity(header: &Option<Header>, data_blocks: &Vec<DataBl
     if data_size < width * height * pixel_size {
         return Err(errors::MalformedFileError::new("Missing data"));
     }
+    if data_size > width * height * pixel_size {
+        println!("Warning : Too much data present in the file, clamping it")
+    }
 
     Ok(())
 }
