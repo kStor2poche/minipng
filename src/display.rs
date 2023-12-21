@@ -88,7 +88,7 @@ impl Image for BwImage {
     }
 }
 impl Image for GsImage {
-    fn from_blocks(blocks: Vec<DataBlock>, width: u32, height: u32) -> Self where Self: Sized {
+    fn from_blocks(blocks: &Vec<DataBlock>, width: u32, height: u32) -> Self where Self: Sized {
         let data = blocks.iter()
                          .map(|data_block| data_block.get_content())
                          .flatten()
