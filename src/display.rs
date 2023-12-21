@@ -1,18 +1,16 @@
-use crate::parser::Block;
+use crate::parser::{Header, Comment};
 use std::fmt;
 
-impl fmt::Display for dyn Block {
+impl fmt::Display for Comment {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self.get_kind() {
-            'C' => {
-                write!(f, "Comment : {}", self.get_content().iter().map(|n| *n as char).collect::<String>())
-            },
-            'H' => {
-                let width = u32::from_be_bytes(self.get_content()[0..3].try_into().unwrap());
-                let height = u32::from_be_bytes(self.get_content()[4..8].try_into().unwrap());
-                let mode_digit = self.get_content().get(8).unwrap();
+        write!(f, "Comment : {}", self.get_content())
+    }
+}
+impl fmt::Display for Header {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                let content = self.get_content();
                 let tmp_err_format;
-                let mode = match mode_digit {
+                let mode = match content.2 {
                     0 => "black and white",
                     1 => "grey level",
                     2 => "palette",
@@ -22,11 +20,6 @@ impl fmt::Display for dyn Block {
                         &tmp_err_format
                     },
                 };
-                write!(f, "Image info :\n{}x{}, {}.", width, height, mode)
-            },
-            _ => {
-                Ok(())
-            },
-        }
+    write!(f, "Image info :\n{}x{}, {}.", content.0, content.1, mode)
     }
 }
