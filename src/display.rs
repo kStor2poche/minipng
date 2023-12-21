@@ -1,5 +1,5 @@
 use crate::{parser::{Header, Comment, DataBlock}, errors::MalformedFileError};
-use std::fmt;
+use std::{fmt, iter::Empty};
 
 /* 
 * Part 2 :
@@ -23,8 +23,8 @@ impl fmt::Display for Header {
                 let tmp_err_format;
                 let mode = match content.2 {
                     0 => "black and white",
-                    1 => "grey level",
-    2 => "palette",
+                    1 => "greyscale",
+                    2 => "palette",
                     3 => "24 bit color",
                     n => {
                         tmp_err_format = format!("found invalid mode \"{}\"", n);
@@ -41,6 +41,8 @@ pub fn get_image(header: &Header, data: &Vec<DataBlock>) -> Result<Box<dyn Image
     match pixel_type {
         0 => Ok(Box::new(BwImage::from_blocks(data, width, height))),
         1 => Ok(Box::new(GsImage::from_blocks(data, width, height))),
+        2 => todo!(),
+        3 => Ok(Box::new(RgbImage::from_blocks(data, width, height))),
         _ => Err(MalformedFileError::new("Invalid pixel type"))
     }
 }
@@ -130,13 +132,24 @@ impl Image for PalImage {
 impl Image for RgbImage {
     fn from_blocks(blocks: &Vec<DataBlock>, width: u32, height: u32) -> Self where Self: Sized {
         let data = blocks.iter()
-                         .map(|data_block| data_block.get_content())
+                         .map(|data_block| data_block.get_content().to_owned())
                          .flatten()
-                         .map(|uchar| *uchar)
-                         .collect::<Vec<u8>>();
+                         .collect::<Vec<u8>>()
+                         .chunks_exact(3)
+                         .map(|colors| (colors[0], colors[1], colors[2]))
+                         .collect::<Vec<(u8, u8, u8)>>()
+        ;
         Self { data, width, height }
     }
     fn display(&self) {
-        
+        self.data.chunks_exact(self.width as usize)
+                 .take(self.height as usize)
+                 .for_each(
+                     |r| println!("{}", 
+                                  r.iter()
+                                   .map(|(r, g, b)| rgb_pixel(*r, *g, *b))
+                                   .collect::<String>())
+                  );
+        print!("\x1b[0m")
     }
 }
