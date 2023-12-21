@@ -22,6 +22,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let blocks = parse_blocks(&data)?;
 
+    if blocks.0.is_none() {
+        return Err(Box::new(errors::MalformedFileError::new("Missing header block")));
+    }
+
     println!("{}", blocks.0.unwrap());
     
     for com in blocks.1 {

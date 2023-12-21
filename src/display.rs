@@ -1,4 +1,4 @@
-use crate::parser::{Header, Comment, BwData, DataBlock};
+use crate::{parser::{Header, Comment, DataBlock}, errors::MalformedFileError};
 use std::fmt;
 
 /* 
@@ -27,6 +27,15 @@ impl fmt::Display for Header {
                     },
                 };
     write!(f, "Image info :\n{}x{}, {}.", content.0, content.1, mode)
+    }
+}
+
+
+pub fn get_image(header: Header, data: Vec<DataBlock>) -> Result<Box<dyn Image>, MalformedFileError> {
+    let (width, height, pixel_type) = header.get_content();
+    match pixel_type {
+        0 => Ok(Box::new(BwImage::from_blocks(data, width, height))),
+        _ => Err(MalformedFileError::new("Invalid pixel type"))
     }
 }
 

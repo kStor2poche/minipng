@@ -1,7 +1,6 @@
 use std::error::Error;
 
 use crate::errors::*;
-use crate::display::Data;
 
 const MAGIC_BYTES: [u8; 8] = [b'M', b'i', b'n', b'i', b'-', b'P', b'N', b'G']; //Mini-PNG as byte array
 
@@ -155,25 +154,17 @@ mod tests {
     #[test]
     fn test_magic_bytes() {
         let mut test_bytes = MAGIC_BYTES.to_vec();
-        assert!(validate_magic_bytes(
-            &test_bytes
-        ));
+        validate_magic_bytes(&test_bytes).unwrap();
 
         test_bytes.append(&mut vec![1, 2, 81]);
-        assert!(validate_magic_bytes(
-            &test_bytes
-        ));
+        validate_magic_bytes(&test_bytes).unwrap();
 
         test_bytes[0] = 15;
-        assert!(!validate_magic_bytes(
-            &test_bytes
-        ));
+        assert!(validate_magic_bytes(&test_bytes).is_err());
 
         test_bytes[0] = 0x4d;
         test_bytes[7] = 0;
-        assert!(!validate_magic_bytes(
-            &test_bytes
-        ));
+        assert!(validate_magic_bytes(&test_bytes).is_err());
     }
 
     #[test]
