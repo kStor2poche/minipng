@@ -55,6 +55,16 @@ pub struct GsImage {
     width: u32,
     height: u32,
 }
+pub struct PalImage {
+    data: Vec<u8>,
+    width: u32,
+    height: u32,
+}
+pub struct RgbImage {
+    data: Vec<(u8, u8, u8)>,
+    width: u32,
+    height: u32,
+}
 
 pub trait Image {
     fn from_blocks(blocks: &Vec<DataBlock>, width: u32, height: u32) -> Self where Self: Sized;
@@ -106,5 +116,26 @@ impl Image for GsImage {
                                    .collect::<String>())
                   );
         print!("\x1b[0m")
+    }
+}
+impl Image for PalImage {
+    fn from_blocks(blocks: &Vec<DataBlock>, width: u32, height: u32) -> Self where Self: Sized {
+        todo!()
+    }
+    fn display(&self) {
+        todo!()
+    }
+}
+impl Image for RgbImage {
+    fn from_blocks(blocks: &Vec<DataBlock>, width: u32, height: u32) -> Self where Self: Sized {
+        let data = blocks.iter()
+                         .map(|data_block| data_block.get_content())
+                         .flatten()
+                         .map(|uchar| *uchar)
+                         .collect::<Vec<u8>>();
+        Self { data, width, height }
+    }
+    fn display(&self) {
+        
     }
 }
