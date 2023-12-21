@@ -92,6 +92,11 @@ impl Block for DataBlock {
     }
 }
 
+impl DataBlock {
+    pub fn get_content(&self) -> Vec<u8> {
+        self.content
+    }
+}
 
 /*
     fn from_raw_data<T>(data: &mut T, block_length: u32) -> Self where T: Iterator<Item = u8> {

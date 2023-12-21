@@ -1,4 +1,4 @@
-use crate::parser::{Header, Comment, BwData, DataBlock};
+use crate::parser::{Header, Comment, DataBlock};
 use std::fmt;
 
 /* 
@@ -38,14 +38,32 @@ pub struct BwImage {
 }
 
 pub trait Image {
-    fn from_blocks(blocks: Vec<DataBlock>) -> Self where Self: Sized;
+    fn from_blocks(blocks: Vec<DataBlock>, width: u32, height: u32) -> Self where Self: Sized;
     fn display(&self);
 }
 impl Image for BwImage {
-    fn from_blocks(blocks: Vec<DataBlock>) -> Self {
-        todo!()
+    fn from_blocks(blocks: Vec<DataBlock>, width: u32, height: u32) -> Self {
+        let data = blocks.iter()
+                         .map(|data_block| data_block.get_content())
+                         .flatten()
+                         .map(|c| vec![ c & 0b10000000 == 0b10000000,
+                                        c & 0b01000000 == 0b01000000,
+                                        c & 0b00100000 == 0b00100000,
+                                        c & 0b00010000 == 0b00010000,
+                                        c & 0b00001000 == 0b00001000,
+                                        c & 0b00000100 == 0b00000100,
+                                        c & 0b00000010 == 0b00000010,
+                                        c & 0b00000001 == 0b00000001,])
+                          .flatten().collect::<Vec<bool>>();
+        Self { data, width, height }
     }
     fn display(&self) {
-        todo!()
+        let matrix = self.data.chunks_exact(self.width as usize)
+                              .for_each(
+                                  |r| println!("{}", 
+                                               r.iter()
+                                                .map(|b| if *b {'X'} else {' '})
+                                                .collect::<String>())
+                               );
     }
 }
