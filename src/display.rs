@@ -58,12 +58,12 @@ impl Image for BwImage {
         Self { data, width, height }
     }
     fn display(&self) {
-        let matrix = self.data.chunks_exact(self.width as usize)
-                              .for_each(
-                                  |r| println!("{}", 
-                                               r.iter()
-                                                .map(|b| if *b {'X'} else {' '})
-                                                .collect::<String>())
-                               );
+        self.data.chunks_exact(self.width as usize)
+                 .for_each(
+                     |r| println!("{}", 
+                                  r.iter()
+                                   .map(|b| if *b {'X'} else {' '})
+                                   .collect::<String>())
+                  );
     }
 }
