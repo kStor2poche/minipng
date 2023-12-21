@@ -146,9 +146,12 @@ pub fn validate_file_integrity(header: &Option<Header>, data_blocks: &Vec<DataBl
         .map(|block| {
             block.get_length()
         })
-        .sum::<u32>();
+        .sum::<u32>() * 8;
     let pixel_size = match pixel_type {
         0 => 1,
+        1 => 8,
+        2 => 8,
+        3 => 24,
         _ => return Err(errors::MalformedFileError::new("Invalid pixel type")),
     };
 
