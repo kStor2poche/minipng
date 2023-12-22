@@ -97,6 +97,7 @@ impl DataBlock {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct Palette {
     palette: Vec<(u8, u8, u8)>,
 }
